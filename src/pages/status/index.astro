@@ -20,7 +20,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
       </section>
       <div id="ticket-quit-alert" class="alert" role="alert"></div>
       <footer class="ticket-actions">
-        <button class="btn btn-primary ticket-notify" id="ticket-notify" type="button"><span aria-hidden="true">♧</span> Enable notifications</button>
+        <button class="btn btn-primary ticket-notify" id="ticket-notify" type="button"><span aria-hidden="true">♧</span> <span id="ticket-notify-label">Enable notifications</span></button>
+        <p class="ticket-notify-status" id="ticket-notify-status" role="status" aria-live="polite"></p>
         <a class="ticket-quit" id="ticket-quit" href="/join">Quit the queue</a>
       </footer>
       <div class="ticket-accessible-details" aria-label="Ticket details">

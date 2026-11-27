@@ -15,6 +15,9 @@ let socket;
 let refreshTimer;
 let countdownTimer;
 let dashboardCurrent;
+let ticketStatusInitialized = false;
+let ticketLastStatus = "";
+let ticketLastAhead = 0;
 
 const ticketUrl = (id) => location.port === "4321" ? `/status/?ticket=${encodeURIComponent(id)}` : `/status/${encodeURIComponent(id)}`;
 
@@ -228,7 +231,8 @@ async function initStatusPage() {
   const pathSegments = location.pathname.split("/").filter(Boolean);
   const pathId = pathSegments.at(-1) === "status" ? "" : pathSegments.at(-1);
   const id = decodeURIComponent(pathId || new URLSearchParams(location.search).get("ticket") || "");
-  $("#ticket-notify")?.addEventListener("click", enableTicketNotifications, { once: true });
+  updateTicketNotificationControl();
+  $("#ticket-notify")?.addEventListener("click", enableTicketNotifications);
   $("#ticket-quit")?.addEventListener("click", async (event) => {
     event.preventDefault();
     const leaveConfirmed = await confirmAction("Leave the queue?", "Your waiting ticket will be canceled and your place in line will be lost.", { confirmLabel: "Leave queue", danger: true });
@@ -251,13 +255,10 @@ async function initStatusPage() {
       $("#ticket-loading").hidden = true;
       $("#ticket-panel").hidden = false;
       $("#ticket-number").textContent = ticket.queueNumber;
-      $("#ticket-status").textContent = ticket.status.replace("-", " ");
       $("#ticket-student").textContent = ticket.studentId;
       $("#ticket-joined").textContent = formatDate(ticket.joinedAt);
-      $("#ticket-current").textContent = currentServing || "—";
-      $("#ticket-ahead").textContent = String(ahead);
       $("#ticket-wait").textContent = ticket.status === "serving" ? "You are being served" : ["completed", "no-show", "cancelled"].includes(ticket.status) ? "Queue finished" : estimatedWaitMinutes ? `About ${estimatedWaitMinutes} minutes` : "Up next";
-      updateTicketMessage(ticket.status, ahead);
+      renderStudentPosition({ currentServing, ahead, status: ticket.status });
     } catch {
       $("#ticket-loading").textContent = "This ticket link is invalid or unavailable. Please return to the queue page to join.";
     }
@@ -278,6 +279,17 @@ function renderStudentPosition(position) {
     status.className = "ticket-status-hidden";
     status.textContent = position.status.replace("-", " ");
   }
+  const ahead = Math.max(0, Number(position.ahead) || 0);
+  if (ticketStatusInitialized) {
+    if (position.status !== ticketLastStatus) {
+      notifyTicketStatus(position.status);
+    } else if (position.status === "waiting" && ticketLastAhead > 0 && ahead === 0) {
+      showTicketNotification("You're next", "Please stay nearby — your turn is coming up.");
+    }
+  }
+  ticketStatusInitialized = true;
+  ticketLastStatus = position.status;
+  ticketLastAhead = ahead;
   updateTicketMessage(position.status, position.ahead);
 }
 
@@ -301,9 +313,67 @@ function updateTicketMessage(status, ahead = 0) {
 
 async function enableTicketNotifications() {
   const button = $("#ticket-notify");
-  if (!("Notification" in window)) { button.textContent = "Notifications unavailable"; return; }
-  const permission = await Notification.requestPermission();
-  button.textContent = permission === "granted" ? "Notifications enabled" : "Notifications blocked";
+  if (!button || !window.isSecureContext || !("Notification" in window)) {
+    updateTicketNotificationControl();
+    return;
+  }
+  try {
+    await Notification.requestPermission();
+    updateTicketNotificationControl();
+  } catch (error) {
+    console.error("Could not request notification permission:", error);
+    $("#ticket-notify-status").textContent = "Could not request permission. Check your browser's site settings and try again.";
+  }
+}
+
+function updateTicketNotificationControl() {
+  const button = $("#ticket-notify");
+  const label = $("#ticket-notify-label");
+  const status = $("#ticket-notify-status");
+  if (!button || !label || !status) return;
+  if (!window.isSecureContext || !("Notification" in window)) {
+    label.textContent = "Notifications unavailable";
+    button.disabled = true;
+    status.textContent = "This browser or connection does not support notifications.";
+  } else if (Notification.permission === "granted") {
+    label.textContent = "Notifications enabled";
+    button.disabled = true;
+    status.textContent = "We'll alert you when you're next or called. Keep this page open.";
+  } else if (Notification.permission === "denied") {
+    label.textContent = "Notifications blocked";
+    button.disabled = true;
+    status.textContent = "Allow notifications in your browser's site settings to enable alerts.";
+  } else {
+    label.textContent = "Enable notifications";
+    button.disabled = false;
+    status.textContent = "Get an alert when you're next or called. Keep this page open.";
+  }
+}
+
+function notifyTicketStatus(status) {
+  const messages = {
+    serving: ["It's your turn!", "Please proceed to the service desk."],
+    completed: ["Clearance complete", "Your ticket has been completed."],
+    "no-show": ["Queue update", "Your ticket is no longer active. Please contact staff."],
+    cancelled: ["Ticket cancelled", "Your ticket was cancelled."],
+  };
+  const message = messages[status];
+  if (message) showTicketNotification(message[0], message[1]);
+}
+
+function showTicketNotification(title, body) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  try {
+    const notification = new Notification(title, { body, tag: "clearance-queue-ticket", renotify: true });
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch (error) {
+    console.error("Could not display ticket notification:", error);
+    const status = $("#ticket-notify-status");
+    if (status) status.textContent = "Your browser could not display a notification.";
+  }
 }
 
 async function initLoginPage() {

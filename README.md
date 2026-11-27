@@ -65,6 +65,7 @@ Staff/admin sockets join `staff-room` and receive full dashboard queue data. Una
 - The server persists `callExpiresAt`, processes expired calls in the background, and checks expiry when queue operations/status are requested. A restart does not reset a call timer.
 - Admins can pause new ticket registrations and configure the call timeout from Queue Settings.
 - Students can return to an active ticket using the ticket URL or browser storage. The UUID ticket URL exposes only that ticket's status details; other students are never listed by public endpoints.
+- Students can enable browser notifications on their ticket page to be alerted when they are next or called. Notifications require browser permission and the ticket page to remain open; they do not work after the page is closed.
 - Waiting estimates use a simple five-minute-per-person approximation. Adjust that constant in `src/scripts/app.js` if school service-time observations call for a different estimate.
 - Admin queue reset marks today's active tickets as No Show and retains the daily counter and historical records to prevent duplicate queue numbers.
 
