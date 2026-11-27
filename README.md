@@ -15,7 +15,7 @@ An MVP clearance queue with an Astro/Tailwind web app, Express API, MongoDB pers
    npm install
    ```
 
-2. Copy `.env.example` to `.env` and set `MONGODB_URI`, a random `SESSION_SECRET` of at least 32 characters, and the admin and staff names, emails, and passwords. Use passwords of at least 12 characters.
+2. Copy `.env.example` to `.env` and set `MONGODB_URI`, a random `SESSION_SECRET` of at least 32 characters, and the admin and staff names, emails, and passwords. Use passwords of at least 12 characters. Configure `RESEND_API_KEY` and `MAIL_FROM` for password-reset emails.
 3. Ensure the database is reachable from your machine in Atlas Network Access.
 4. Create the initial administrator, then start the Astro and API development servers:
 
@@ -50,7 +50,7 @@ Visit `/qr` and print the single QR code. It encodes `${PUBLIC_APP_URL}/join`; i
 - `/` is the staff/admin sign-in page. `/join` is the public student registration page.
 - `/join` is public and contains no staff/admin links. It shows only queue status, accepts a numeric student ID with optional hyphens, and validates joins on the server. Hyphens are removed before duplicate checking.
 - Sign-in is at `/`; sign-in redirects by account role. The old `/login` URL redirects to `/`.
-- Staff can use **Forgot password?** to get instructions for requesting a temporary password from an administrator. Admins can issue or reset staff temporary passwords in Staff Accounts; staff must change them at next sign-in.
+- **Forgot password?** sends a six-digit code to the account email; the code expires after 10 minutes. Admins can also issue or reset staff temporary passwords in Staff Accounts; staff must change them at next sign-in.
 - Staff/admin sessions persist across browser restarts and roll forward while active, with a one-year idle expiry. Logging out clears the session.
 - `/staff/dashboard` and `/staff/history` are available to staff and admins. `/admin/dashboard`, `/admin/staff`, `/admin/settings`, `/admin/history`, and `/qr` are admin-only.
 - `/account` lets signed-in staff and admins update their email address and password after confirming their current password.

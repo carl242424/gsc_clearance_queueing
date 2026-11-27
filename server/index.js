@@ -12,6 +12,8 @@ import { z } from "zod";
 import { setServers } from "node:dns";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { sendPasswordResetOtp } from "./email.js";
 import {
   QueueCounter,
   QueueHistory,
@@ -137,6 +139,30 @@ const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1).max(200),
   newPassword: z.string().min(12).max(200),
 });
+const passwordResetRequestSchema = z.object({ email: z.email().max(254) });
+const passwordResetSchema = z.object({
+  email: z.email().max(254),
+  otp: z.string().regex(/^\d{6}$/),
+  newPassword: z.string().min(12).max(200),
+});
+const passwordResetRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many reset requests. Try again later." },
+});
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many reset attempts. Try again later." },
+});
+
+function hashPasswordResetOtp(email, otp) {
+  return createHash("sha256").update(`${sessionSecret}:${email}:${otp}`).digest("hex");
+}
 const emailUpdateSchema = z.object({
   currentPassword: z.string().min(1).max(200),
   email: z.email().max(254),
@@ -332,6 +358,76 @@ app.post("/api/auth/password/change", loginLimiter, asyncRoute(async (req, res) 
     "session.user.id": String(user._id),
     _id: { $ne: req.sessionID },
   });
+  res.json({ success: true });
+}));
+
+app.post("/api/auth/password/reset/request", passwordResetRequestLimiter, asyncRoute(async (req, res) => {
+  if (!process.env.RESEND_API_KEY || !process.env.MAIL_FROM) {
+    return fail(res, 503, "Password reset email is not configured. Contact the system administrator.");
+  }
+  const parsed = passwordResetRequestSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, "Enter a valid email address.");
+  const email = parsed.data.email.trim().toLowerCase();
+  const genericMessage = "If an active account uses that email, a reset code will arrive shortly.";
+  const user = await User.findOne({ email, isActive: true });
+  if (!user) return res.json({ message: genericMessage });
+
+  const now = new Date();
+  if (user.passwordResetOtpSentAt && now - user.passwordResetOtpSentAt < 60_000) {
+    return res.json({ message: genericMessage });
+  }
+
+  const otp = String(randomInt(100000, 1000000));
+  user.passwordResetOtpHash = hashPasswordResetOtp(email, otp);
+  user.passwordResetOtpExpiresAt = new Date(now.getTime() + 10 * 60 * 1000);
+  user.passwordResetOtpSentAt = now;
+  user.passwordResetOtpAttempts = 0;
+  await user.save();
+  try {
+    await sendPasswordResetOtp(email, otp);
+  } catch (error) {
+    console.error("Password reset email could not be sent:", error.message);
+    await User.updateOne({ _id: user._id }, { $unset: { passwordResetOtpHash: 1, passwordResetOtpExpiresAt: 1, passwordResetOtpSentAt: 1 }, $set: { passwordResetOtpAttempts: 0 } });
+  }
+  res.json({ message: genericMessage });
+}));
+
+app.post("/api/auth/password/reset", passwordResetLimiter, asyncRoute(async (req, res) => {
+  const parsed = passwordResetSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, "Enter a valid email, six-digit code, and new password of at least 12 characters.");
+  const email = parsed.data.email.trim().toLowerCase();
+  const expectedHash = hashPasswordResetOtp(email, parsed.data.otp);
+  const expectedBuffer = Buffer.from(expectedHash, "hex");
+  const candidate = await User.findOne({
+    email,
+    isActive: true,
+    passwordResetOtpExpiresAt: { $gt: new Date() },
+    passwordResetOtpAttempts: { $lt: 5 },
+  }).select("passwordResetOtpHash").lean();
+  const storedBuffer = candidate?.passwordResetOtpHash ? Buffer.from(candidate.passwordResetOtpHash, "hex") : Buffer.alloc(0);
+  const matches = storedBuffer.length === expectedBuffer.length && timingSafeEqual(storedBuffer, expectedBuffer);
+
+  if (!candidate || !matches) {
+    await User.updateOne({
+      email,
+      isActive: true,
+      passwordResetOtpExpiresAt: { $gt: new Date() },
+      passwordResetOtpAttempts: { $lt: 5 },
+    }, { $inc: { passwordResetOtpAttempts: 1 } });
+    return fail(res, 400, "The reset code is invalid or expired.");
+  }
+
+  const updated = await User.findOneAndUpdate({
+    _id: candidate._id,
+    passwordResetOtpHash: expectedHash,
+    passwordResetOtpExpiresAt: { $gt: new Date() },
+    passwordResetOtpAttempts: { $lt: 5 },
+  }, {
+    $set: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 12), mustChangePassword: false },
+    $unset: { passwordResetOtpHash: 1, passwordResetOtpExpiresAt: 1, passwordResetOtpSentAt: 1 },
+  }, { new: true });
+  if (!updated) return fail(res, 400, "The reset code is invalid or expired.");
+  await mongoose.connection.collection("sessions").deleteMany({ "session.user.id": String(updated._id) });
   res.json({ success: true });
 }));
 

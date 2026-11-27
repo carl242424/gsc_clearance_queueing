@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["admin", "staff"], required: true },
   isActive: { type: Boolean, default: true },
   mustChangePassword: { type: Boolean, default: false },
+  passwordResetOtpHash: String,
+  passwordResetOtpExpiresAt: Date,
+  passwordResetOtpSentAt: Date,
+  passwordResetOtpAttempts: { type: Number, default: 0 },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ username: 1 }, { unique: true });

@@ -336,6 +336,52 @@ async function initAccountPage() {
   });
 }
 
+async function initForgotPasswordPage() {
+  const requestForm = $("#reset-request-form");
+  const resetForm = $("#reset-password-form");
+  const alert = $("#forgot-password-alert");
+  requestForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = requestForm.querySelector('button[type="submit"]');
+    const email = requestForm.elements.email.value.trim();
+    button.disabled = true;
+    try {
+      const { message } = await request("/api/auth/password/reset/request", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      $("#reset-email").value = email;
+      resetForm.hidden = false;
+      showAlert(alert, message || "If an active account uses that email, a reset code will arrive shortly.", "success");
+      $("#reset-otp").focus();
+    } catch (error) {
+      showAlert(alert, error.message);
+    } finally { button.disabled = false; }
+  });
+
+  resetForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(resetForm));
+    if (values.newPassword !== values.confirmPassword) {
+      showAlert(alert, "The new passwords do not match.");
+      return;
+    }
+    const button = resetForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await request("/api/auth/password/reset", {
+        method: "POST",
+        body: JSON.stringify({ email: values.email, otp: values.otp, newPassword: values.newPassword }),
+      });
+      requestForm.hidden = true;
+      resetForm.hidden = true;
+      showAlert(alert, "Password reset. You can now sign in with your new password.", "success");
+    } catch (error) {
+      showAlert(alert, error.message);
+    } finally { button.disabled = false; }
+  });
+}
+
 async function loadDashboard(role) {
   const data = await request("/api/queue/dashboard");
   const timerInput = $("#call-duration");
@@ -592,6 +638,7 @@ const handlers = {
   login: initLoginPage,
   account: initAccountPage,
   "change-password": initChangePasswordPage,
+  "forgot-password": initForgotPasswordPage,
   "staff-dashboard": () => initDashboard("staff"),
   "admin-dashboard": () => initDashboard("admin"),
   "admin-staff": initStaffPage,
