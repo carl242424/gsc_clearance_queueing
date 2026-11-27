@@ -47,9 +47,9 @@ Visit `/qr` and print the single QR code. It encodes `${PUBLIC_APP_URL}/join`; i
 
 ## Route access
 
-- `/` redirects to the public student registration page at `/join`.
+- `/` is the staff/admin sign-in page. `/join` is the public student registration page.
 - `/join` is public and contains no staff/admin links. It shows only queue status, accepts a numeric student ID with optional hyphens, and validates joins on the server. Hyphens are removed before duplicate checking.
-- `/login` is the single staff/admin sign-in page. Sign-in redirects by account role.
+- Sign-in is at `/`; sign-in redirects by account role. The old `/login` URL redirects to `/`.
 - `/staff/dashboard` and `/staff/history` are available to staff and admins. `/admin/dashboard`, `/admin/staff`, `/admin/settings`, `/admin/history`, and `/qr` are admin-only.
 - Express protects production dashboard routes and API endpoints. The Astro dev/preview middleware checks the API session before serving protected dashboard pages.
 

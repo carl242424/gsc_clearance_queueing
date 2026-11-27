@@ -80,7 +80,7 @@ async function requireUser(roles) {
     if (avatar) avatar.textContent = user.name.trim().charAt(0).toUpperCase() || "A";
     return user;
   } catch {
-    location.replace("/login");
+    location.replace("/");
     return null;
   }
 }
@@ -329,7 +329,7 @@ async function initDashboard(role) {
   countdownTimer = window.setInterval(updateCountdown, 1000);
   $("#logout").addEventListener("click", async () => {
     await request("/api/auth/logout", { method: "POST" });
-    location.assign("/login");
+    location.assign("/");
   });
   if (role === "staff") {
     $("#call-next").addEventListener("click", async () => {
@@ -372,7 +372,7 @@ async function initStaffPage() {
     $("#staff-list").innerHTML = staff.length ? staff.map((person) => `<tr><td><strong>${escapeHtml(person.name)}</strong></td><td>${escapeHtml(person.email)}</td><td>${escapeHtml(person.username)}</td><td>${person.isActive ? '<span class="admin-status" data-status="completed">Active</span>' : '<span class="admin-status">Inactive</span>'}</td><td class="admin-menu-cell"><details class="admin-row-menu"><summary aria-label="Actions for ${escapeHtml(person.name)}">···</summary><div><button class="admin-button ${person.isActive ? "admin-button-danger" : ""}" type="button" data-staff-id="${escapeHtml(person.id)}" data-active="${person.isActive}">${person.isActive ? "Deactivate" : "Activate"}</button></div></details></td></tr>`).join("") : '<tr><td colspan="5" class="admin-empty">No staff accounts have been added.</td></tr>';
   };
   await list();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/login"); });
+  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   $("#staff-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -400,7 +400,7 @@ async function initSettingsPage() {
   const user = await requireUser("admin");
   if (!user) return;
   connectAdminStatus();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/login"); });
+  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   const { settings } = await request("/api/admin/settings");
   $("#duration").value = settings.noShowDuration;
   $("#queue-status").value = settings.systemStatus;
@@ -429,7 +429,7 @@ async function initHistoryPage() {
   const user = await requireUser(roles);
   if (!user) return;
   connectAdminStatus();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/login"); });
+  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   const date = $("#history-date");
   const search = page === "admin-history" ? $("#history-search") : null;
   const tbody = $("#history-table");
@@ -470,7 +470,7 @@ async function initQrPage() {
   const user = await requireUser("admin");
   if (!user) return;
   connectAdminStatus();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/login"); });
+  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   $("#print-qr").addEventListener("click", () => window.print());
   try {
     const { url, dataUrl } = await request("/api/qr");

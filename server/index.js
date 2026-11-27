@@ -153,13 +153,13 @@ function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.session.user) {
       if (req.path.startsWith("/api/")) return fail(res, 401, "Please sign in to continue.");
-      return res.redirect("/login");
+      return res.redirect("/");
     }
     ensureActive(req.session.user.id).then((user) => {
       if (!user) {
         req.session.destroy(() => {});
         if (req.path.startsWith("/api/")) return fail(res, 401, "This account is inactive.");
-        return res.redirect("/login");
+        return res.redirect("/");
       }
       if (!roles.includes(user.role)) return fail(res, 403, "You do not have permission to view this page.");
       req.session.user.role = user.role;
@@ -699,9 +699,10 @@ if (isProduction) {
     if (!roles) return next();
     return requireRole(...roles)(req, res, next);
   });
-  app.get("/", (_req, res) => res.redirect(302, "/join"));
+  app.get("/", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
+  app.get("/login", (_req, res) => res.redirect(308, "/"));
   app.get("/join/clearance", (_req, res) => res.redirect(302, "/join"));
-  app.get(["/staff/login", "/admin/login"], (_req, res) => res.redirect(302, "/login"));
+  app.get(["/staff/login", "/admin/login"], (_req, res) => res.redirect(302, "/"));
   for (const [route] of protectedPageRoles) {
     app.get(route, (_req, res, next) => {
       const file = path.join(distPath, route.slice(1), "index.html");
