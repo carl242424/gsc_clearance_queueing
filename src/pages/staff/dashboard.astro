@@ -1,0 +1,36 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Queue dashboard" page="staff-dashboard" active="overview" role="staff">
+  <header class="admin-page-heading">
+    <div><h1>Queue dashboard</h1><p>Today's live service activity.</p><span class="admin-helper" id="today-label"></span></div>
+    <div class="admin-page-actions"><button class="admin-button admin-button-primary" id="call-next" type="button" disabled>Call next student</button></div>
+  </header>
+  <div id="page-alert" class="alert" role="alert"></div>
+  <section class="admin-summary admin-surface staff-summary" aria-label="Today's queue summary">
+    <div class="admin-summary-item"><span class="admin-summary-label">Waiting</span><strong class="admin-summary-value" id="waiting-count">—</strong></div>
+    <div class="admin-summary-item"><span class="admin-summary-label">Served today</span><strong class="admin-summary-value" id="completed-count">—</strong></div>
+    <div class="admin-summary-item"><span class="admin-summary-label">No-shows</span><strong class="admin-summary-value" id="noshow-count">—</strong></div>
+    <div class="admin-summary-item"><span class="admin-summary-label">Next in line</span><strong class="admin-summary-value" id="next-number">—</strong></div>
+  </section>
+  <section class="admin-grid">
+    <div class="admin-span-7">
+      <section class="admin-surface" style="padding:20px;margin-bottom:16px">
+        <div class="admin-section-heading"><div><h2>Currently serving</h2><p id="current-student">No student is currently being served.</p></div><span class="admin-status" data-status="serving">In service</span></div>
+        <div class="admin-serving-number" id="current-number">—</div>
+        <div class="admin-service-footer"><div><span class="admin-helper">Call timer</span><div class="admin-countdown" id="countdown">--:--</div></div><div class="row-actions"><button class="admin-button admin-button-primary" id="complete-button" type="button" disabled>Mark completed</button><button class="admin-button" id="no-show-button" type="button" disabled>Mark no-show</button></div></div>
+      </section>
+      <section>
+        <div class="admin-section-heading"><div><h2>Waiting queue</h2><p>Students are called in the order they joined.</p></div></div>
+        <div class="admin-surface"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th class="numeric">Queue</th><th class="numeric">Student ID</th><th>Joined</th><th class="numeric">Position</th></tr></thead><tbody id="waiting-table"><tr><td colspan="4"><div class="admin-skeleton" aria-label="Loading queue"></div></td></tr></tbody></table></div><div id="waiting-empty" class="admin-empty" hidden>No students are waiting.</div></div>
+      </section>
+    </div>
+    <div class="admin-span-5">
+      <section class="admin-surface" style="padding:20px">
+        <div class="admin-section-heading"><div><h2>Queue controls</h2><p>Set the response time for each call.</p></div></div>
+        <div class="admin-next-ticket"><span class="admin-helper">Next student</span><strong id="next-card-number">—</strong><span class="admin-helper" id="next-card-student">No students waiting</span></div>
+        <form id="timer-form" class="admin-form" style="margin-top:20px"><div class="admin-field"><label for="call-duration">No-show timeout</label><input class="admin-control" id="call-duration" name="duration" type="number" min="30" max="3600" required /><span class="admin-helper">Seconds to wait before a called student is marked No-show.</span></div><div class="admin-form-actions"><button class="admin-button" type="submit">Save timer</button></div></form>
+      </section>
+    </div>
+  </section>
+</AdminLayout>

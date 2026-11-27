@@ -1,0 +1,8 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Queue history" page="staff-history" active="history" role="staff">
+  <header class="admin-page-heading"><div><h1>Queue history</h1><p>Review queue activity for a selected day.</p></div><div class="admin-page-actions"><label class="admin-field" style="grid-template-columns:auto;align-items:center"><span class="admin-helper">Date</span><input id="history-date" type="date" class="admin-control" /></label></div></header>
+  <div id="page-alert" class="alert" role="alert"></div>
+  <section class="admin-surface"><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Queue</th><th class="numeric">Student ID</th><th>Event</th><th>Performed by</th><th>Time</th></tr></thead><tbody id="history-table"><tr><td colspan="5"><div class="admin-skeleton" aria-label="Loading queue history"></div></td></tr></tbody></table></div><div id="history-empty" class="admin-empty" hidden>No queue activity for this date.</div></section>
+</AdminLayout>

@@ -1,0 +1,27 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Clearance Queue" page="student-join">
+  <main class="student-wrap">
+    <section class="student-content student-join-content">
+      <header class="card student-join-card">
+        <h1>Clearance Queue</h1>
+        <p class="student-intro">Enter your student ID to join the Clearance queue. No student account or password is needed.</p>
+        <div id="join-alert" class="alert" role="status"></div>
+        <form id="join-form">
+          <div class="field">
+            <label for="student-id">Student ID Number</label>
+            <input class="input" id="student-id" name="studentId" type="text" inputmode="numeric" pattern="[0-9]+(-[0-9]+)*" autocomplete="off" maxlength="48" required autofocus placeholder="Enter your student ID" />
+          </div>
+          <div class="student-status-strip" aria-live="polite">
+            <span id="office-status" class="office-status" data-state="loading">Checking queue…</span>
+            <span id="public-waiting-count">— waiting</span>
+            <span id="public-current-serving">Now serving #—</span>
+          </div>
+          <p id="queue-closed-reason" class="student-closed-reason" hidden></p>
+          <button class="btn btn-primary student-join-button" id="join-button" type="submit" disabled>Join the queue</button>
+        </form>
+      </header>
+    </section>
+  </main>
+</BaseLayout>

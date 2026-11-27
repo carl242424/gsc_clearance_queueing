@@ -1,0 +1,25 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Clearance Queuing System" page="login">
+  <main class="split-login">
+    <section class="split-login-panel">
+      <div class="split-login-inner">
+        <img class="login-logo" src="https://scontent.fmnl9-1.fna.fbcdn.net/v/t39.30808-6/625540698_1363540042479394_8593338089776115193_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x2030&ctp=s2048x2030&_nc_cat=105&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=FE1CIOJwYVgQ7kNvwF1JHhz&_nc_oc=Adr0BSBfqLBMYYN4At78h1mBCLpWohpEbaRNZ4B2h28zE_tjg8Vvou1SaqpegxZDvy4O3AgEJW5Xx-Bm7tAuqPIp&_nc_zt=23&_nc_ht=scontent.fmnl9-1.fna&_nc_gid=GucpMbpJRfm6kquX0ybjSw&_nc_ss=7b3a8&oh=00_AQRGgDXegF8uPaOJAEe5XVXALH_M2yEvUn_Jd_D95k1cDA&oe=6B0DF02F" alt="GSC logo" />
+        <p class="split-login-subtitle">Clearance Queueing System</p>
+        <h1>Login</h1>
+        <div id="login-alert" class="alert" role="alert"></div>
+        <form id="login-form">
+          <div class="field"><label for="identity">Email</label><input class="input" id="identity" name="identity" autocomplete="username" placeholder="Enter your email" required autofocus /></div>
+          <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required /></div>
+          <button class="btn btn-primary login-button" type="submit">Sign in</button>
+        </form>
+        <a class="split-student-link" href="/join">Student? Join the queue with your ID</a>
+      </div>
+    </section>
+    <section class="split-login-photo" style="--split-photo: url('https://images.squarespace-cdn.com/content/v1/64098bd554fb3802849ecea7/1a15cc23-29c9-4f79-9999-cea2380dd173/Website+Images_Landing_Page.jpg')" aria-label="GSC campus">
+      <div class="split-photo-shade"></div>
+      <div class="split-photo-copy"><div class="split-photo-tagline"><p>Make the Better Choice</p><h2>Make it GSC!</h2></div></div>
+    </section>
+  </main>
+</BaseLayout>

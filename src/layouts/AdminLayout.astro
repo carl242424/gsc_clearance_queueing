@@ -1,0 +1,41 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import AdminNavItem from "../components/admin/AdminNavItem.astro";
+import "../styles/admin.css";
+
+const { title, page, active = "overview", role = "admin" } = Astro.props;
+---
+<BaseLayout title={`${title} · Clearance Queue`} page={page}>
+  <div class="admin-app">
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Admin navigation">
+      <div class="admin-sidebar-heading">
+        <a class="admin-brand" href={role === "admin" ? "/admin/dashboard" : "/staff/dashboard"}><span class="admin-brand-mark">G</span><span>Clearance Queue<small>{role === "admin" ? "Administration" : "Staff workspace"}</small></span></a>
+        <button class="admin-menu-toggle" id="admin-menu-toggle" type="button" aria-expanded="false" aria-controls="admin-nav" aria-label="Open navigation"><span></span><span></span><span></span></button>
+      </div>
+      <nav class="admin-nav" id="admin-nav" aria-label={`${role === "admin" ? "Admin" : "Staff"} pages`}>
+        {role === "staff" && <AdminNavItem href="/staff/dashboard" label="Dashboard" icon="overview" active={active === "overview"} />}
+        {role === "staff" && <AdminNavItem href="/staff/history" label="History" icon="history" active={active === "history"} />}
+        {role !== "staff" && <AdminNavItem href="/admin/dashboard" label="Overview" icon="overview" active={active === "overview"} />}
+        {role !== "staff" && <AdminNavItem href="/admin/staff" label="Staff" icon="staff" active={active === "staff"} />}
+        {role !== "staff" && <AdminNavItem href="/admin/settings" label="Settings" icon="settings" active={active === "settings"} />}
+        {role !== "staff" && <AdminNavItem href="/admin/history" label="History" icon="history" active={active === "history"} />}
+        {role !== "staff" && <AdminNavItem href="/qr" label="Student QR" icon="qr" active={active === "qr"} />}
+      </nav>
+    </aside>
+    <div class="admin-workspace">
+      <header class="admin-topbar">
+        <div class="admin-breadcrumb"><span>Clearance Queue</span><span aria-hidden="true">/</span><span>{role === "admin" ? "Administration" : "Staff workspace"}</span></div>
+        <div class="admin-topbar-tools">
+          <div class="admin-live" id="admin-live" data-state="connecting" aria-live="polite"><span class="admin-live-dot"></span><span id="admin-live-label">Connecting</span></div>
+          <div class="admin-user-wrap">
+            <button class="admin-user-button" id="admin-user-toggle" type="button" aria-expanded="false" aria-controls="admin-user-menu">
+              <span class="admin-user-avatar" id="admin-user-avatar" aria-hidden="true">A</span><span id="user-name">Administrator</span><span class="admin-user-caret" aria-hidden="true">⌄</span>
+            </button>
+            <div class="admin-user-menu" id="admin-user-menu" hidden><button type="button" id="logout">Sign out</button></div>
+          </div>
+        </div>
+      </header>
+      <main class="admin-main"><slot /></main>
+    </div>
+  </div>
+</BaseLayout>

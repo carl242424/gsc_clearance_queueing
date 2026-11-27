@@ -1,0 +1,22 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Settings" page="admin-settings" active="settings">
+  <header class="admin-page-heading"><div><h1>Queue settings</h1><p>Control queue availability and staff call timing.</p></div></header>
+  <div id="page-alert" class="alert" role="alert"></div>
+  <section class="admin-grid">
+    <div class="admin-span-7 admin-surface" style="padding:20px">
+      <div class="admin-section-heading"><div><h2>Service settings</h2><p>Changes take effect as soon as they are saved.</p></div></div>
+      <form id="settings-form" class="admin-form">
+        <div class="admin-field"><label for="duration">Call timeout</label><input class="admin-control" id="duration" name="noShowDuration" type="number" min="30" max="3600" required /><span class="admin-helper">Seconds a student has to respond before being marked as a no-show.</span></div>
+        <div class="admin-field"><label for="queue-status">Queue availability</label><select class="admin-control" id="queue-status" name="systemStatus"><option value="active">Open — students can join</option><option value="paused">Paused — new tickets disabled</option></select><span class="admin-helper">Pausing blocks new registrations but leaves active tickets intact.</span></div>
+        <div class="admin-form-actions"><button class="admin-button admin-button-primary" type="submit">Save changes</button></div>
+      </form>
+    </div>
+    <div class="admin-span-5 admin-surface" style="padding:20px">
+      <div class="admin-section-heading"><div><h2>Daily queue</h2><p>Queue numbers restart at Q001 each school day.</p></div></div>
+      <div class="admin-helper" style="margin-bottom:6px">Current status</div><div id="system-status" class="admin-settings-status" data-status="active">Loading</div>
+      <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--ad-border)"><h3 style="margin:0 0 6px;font-size:13px">Reset today's queue</h3><p class="admin-helper" style="margin:0 0 14px">Active tickets will be marked No-show. This cannot be undone.</p><button class="admin-button admin-button-danger" id="reset-queue" type="button">Reset queue</button></div>
+    </div>
+  </section>
+</AdminLayout>

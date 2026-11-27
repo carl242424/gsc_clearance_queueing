@@ -1,0 +1,34 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Queue Status" page="student-status">
+  <main class="student-wrap student-ticket-wrap"><section class="student-content student-ticket-content">
+    <div id="ticket-loading" class="empty">Loading your ticket status…</div>
+    <article class="ticket-card" id="ticket-panel" hidden>
+      <header class="ticket-head">
+        <div class="ticket-label">Your ticket number</div>
+        <div class="ticket-number" id="ticket-number"></div>
+        <span class="ticket-status-hidden" id="ticket-status" aria-hidden="true"></span>
+        <div class="ticket-progress-labels"><span>Joined</span><span>Waiting</span><strong id="ticket-next-label">1st Next</strong></div>
+        <div class="ticket-progress"><span id="ticket-progress-fill"></span></div>
+      </header>
+      <div class="ticket-divider" aria-hidden="true"><span></span></div>
+      <section class="ticket-message">
+        <div class="ticket-pill"><span aria-hidden="true">✦</span> <span id="ticket-message-tag">Almost there!</span></div>
+        <h1 id="ticket-message-title">You are next in the queue</h1>
+        <p id="ticket-message-copy">Please stay nearby — you're up next.</p>
+      </section>
+      <footer class="ticket-actions">
+        <button class="btn btn-primary ticket-notify" id="ticket-notify" type="button"><span aria-hidden="true">♧</span> Enable notifications</button>
+        <a class="ticket-quit" href="/join">Quit the queue</a>
+      </footer>
+      <div class="ticket-accessible-details" aria-label="Ticket details">
+        <span>Student ID: <strong id="ticket-student"></strong></span>
+        <span>Joined: <strong id="ticket-joined"></strong></span>
+        <span>Currently serving: <strong id="ticket-current"></strong></span>
+        <span>Students ahead: <strong id="ticket-ahead"></strong></span>
+        <span>Estimated wait: <strong id="ticket-wait"></strong></span>
+      </div>
+    </article>
+  </section></main>
+</BaseLayout>

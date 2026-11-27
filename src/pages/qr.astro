@@ -1,0 +1,12 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Student QR" page="admin-qr" active="qr">
+  <header class="admin-page-heading"><div><h1>Student QR code</h1><p>Print this permanent code for students to scan and join the queue.</p></div><div class="admin-page-actions"><button class="admin-button admin-button-primary print-hide" id="print-qr" type="button">Print QR code</button></div></header>
+  <div id="page-alert" class="alert" role="alert"></div>
+  <section class="admin-surface admin-qr-panel">
+    <div id="qr-loading" class="admin-helper">Preparing QR code…</div>
+    <img id="qr-image" alt="Permanent QR code for the Clearance Queue" hidden />
+    <a id="qr-link" class="admin-helper" style="max-width:100%;overflow-wrap:anywhere;text-align:center"></a>
+  </section>
+</AdminLayout>

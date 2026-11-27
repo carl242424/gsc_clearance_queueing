@@ -1,0 +1,23 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Staff" page="admin-staff" active="staff">
+  <header class="admin-page-heading"><div><h1>Staff accounts</h1><p>Create and manage access for queue staff.</p></div></header>
+  <div id="page-alert" class="admin-error" hidden role="alert"></div>
+  <section class="admin-grid">
+    <div class="admin-span-5 admin-surface" style="padding:20px">
+      <div class="admin-section-heading"><div><h2>Add staff member</h2><p>New accounts can sign in immediately.</p></div></div>
+      <form id="staff-form" class="admin-form">
+        <div class="admin-field"><label for="staff-name">Full name</label><input id="staff-name" class="admin-control" name="name" autocomplete="name" required /></div>
+        <div class="admin-field"><label for="staff-email">Email</label><input id="staff-email" class="admin-control" name="email" type="email" autocomplete="email" required /></div>
+        <div class="admin-field"><label for="staff-username">Username</label><input id="staff-username" class="admin-control" name="username" minlength="3" autocomplete="username" required /></div>
+        <div class="admin-field"><label for="staff-password">Temporary password</label><input id="staff-password" class="admin-control" name="password" type="password" minlength="10" autocomplete="new-password" required /><span class="admin-helper">Use at least 10 characters.</span></div>
+        <div class="admin-form-actions"><button class="admin-button admin-button-primary" type="submit">Create account</button></div>
+      </form>
+    </div>
+    <div class="admin-span-7">
+      <div class="admin-section-heading"><div><h2>Team members</h2><p>Deactivate an account to revoke future sign-ins.</p></div></div>
+      <div class="admin-surface admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Username</th><th>Status</th><th></th></tr></thead><tbody id="staff-list"><tr><td colspan="5"><div class="admin-skeleton" aria-label="Loading staff accounts"></div></td></tr></tbody></table></div>
+    </div>
+  </section>
+</AdminLayout>

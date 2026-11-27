@@ -1,0 +1,24 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Overview" page="admin-dashboard" active="overview">
+  <header class="admin-page-heading">
+    <div><h1>Queue overview</h1><p>Live view of today's queue activity.</p></div>
+    <div class="admin-page-actions"><a class="admin-button" href="/qr">Print student QR</a></div>
+  </header>
+  <div id="page-alert" class="alert" role="alert"></div>
+  <section class="admin-summary admin-surface" aria-label="Today's queue summary">
+    <div class="admin-summary-item"><span class="admin-summary-label">Waiting</span><strong class="admin-summary-value" id="waiting-count">—</strong></div>
+    <div class="admin-summary-item"><span class="admin-summary-label">Served today</span><strong class="admin-summary-value" id="completed-count">—</strong></div>
+    <div class="admin-summary-item"><span class="admin-summary-label">No-shows</span><strong class="admin-summary-value" id="noshow-count">—</strong></div>
+  </section>
+  <section class="admin-grid">
+    <div class="admin-span-12">
+      <div class="admin-section-heading"><div><h2>Live queue</h2><p>Currently serving and waiting tickets, in order.</p></div><span class="admin-helper" id="today-label"></span></div>
+      <div class="admin-surface">
+        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th class="numeric">Queue</th><th class="numeric">Student ID</th><th>Joined</th><th>Status</th></tr></thead><tbody id="waiting-table"><tr><td colspan="4"><div class="admin-skeleton" aria-label="Loading queue"></div></td></tr></tbody></table></div>
+        <div id="waiting-empty" class="admin-empty" hidden>No students are waiting in the queue.</div>
+      </div>
+    </div>
+  </section>
+</AdminLayout>

@@ -1,0 +1,16 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="History" page="admin-history" active="history">
+  <header class="admin-page-heading"><div><h1>Queue history</h1><p>Review queue activity recorded for a selected day.</p></div></header>
+  <div id="page-alert" class="alert" role="alert"></div>
+  <section class="admin-surface">
+    <div class="admin-table-tools" style="justify-content:space-between;padding:12px">
+      <label class="admin-field" style="grid-template-columns:auto;align-items:center;gap:6px"><span class="admin-helper">Date</span><input id="history-date" type="date" class="admin-control" /></label>
+      <label class="admin-field" style="grid-template-columns:auto;align-items:center;gap:6px"><span class="admin-helper">Search records</span><input id="history-search" type="search" class="admin-control" placeholder="Queue or student ID" /></label>
+    </div>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Queue</th><th>Student ID</th><th>Event</th><th>Performed by</th><th>Time</th></tr></thead><tbody id="history-table"><tr><td colspan="5"><div class="admin-skeleton" aria-label="Loading queue history"></div></td></tr></tbody></table></div>
+    <div id="history-empty" class="admin-empty" hidden>No queue activity matches this date and search.</div>
+    <div class="admin-pagination" id="history-pagination"><span id="history-page-label">Loading history…</span><div class="admin-pagination-controls"><button class="admin-button" id="history-prev" type="button" disabled>Previous</button><button class="admin-button" id="history-next" type="button" disabled>Next</button></div></div>
+  </section>
+</AdminLayout>

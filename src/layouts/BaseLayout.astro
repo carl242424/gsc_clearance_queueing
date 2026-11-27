@@ -1,0 +1,19 @@
+---
+import "../styles/global.css";
+const { title = "Clearance Queue", page = "" } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="School clearance queue and service status." />
+    <title>{title}</title>
+  </head>
+  <body data-page={page}>
+    <slot />
+    <script>
+      import "../scripts/app.js";
+    </script>
+  </body>
+</html>
