@@ -294,45 +294,99 @@ async function initAccountPage() {
   $("#account-name").textContent = `${user.name} · ${user.role === "admin" ? "Administrator" : "Staff"}`;
   $("#account-email").value = user.email;
   $("#account-back-link").href = user.role === "admin" ? "/admin/dashboard" : "/staff/dashboard";
+  let savedEmail = user.email.toLowerCase();
+  const emailForm = $("#account-email-form");
+  const emailField = $("#account-email");
+  const emailPasswordField = $("#email-current-password-field");
+  const emailPassword = $("#email-current-password");
+  const emailNext = $("#account-email-next");
+  const emailSubmit = $("#account-email-submit");
+  const emailStep = $("#account-email-step");
+  const passwordStep = $("#account-password-step");
+  const progress = $(".account-progress-track");
+  const progressFill = $("#account-progress-fill");
+  const stepLabel = $("#account-step-label");
+  const passwordForm = $("#account-password-form");
+  const passwordInputs = [passwordForm.elements.currentPassword, passwordForm.elements.newPassword, passwordForm.elements.confirmPassword];
+  const passwordSubmit = $("#account-password-submit");
+  const passwordFinish = $("#account-password-finish");
 
-  $("#account-email-form").addEventListener("submit", async (event) => {
+  const showStep = (step) => {
+    const emailActive = step === 1;
+    emailStep.hidden = !emailActive;
+    passwordStep.hidden = emailActive;
+    progress.setAttribute("aria-valuenow", String(step));
+    progress.setAttribute("aria-valuetext", `Step ${step} of 2`);
+    progressFill.style.width = emailActive ? "50%" : "100%";
+    stepLabel.textContent = emailActive ? "Step 1 of 2 · Update email" : "Step 2 of 2 · Update password";
+  };
+  const updateEmailStep = () => {
+    const changed = emailField.value.trim().toLowerCase() !== savedEmail;
+    emailPasswordField.hidden = !changed;
+    emailPassword.required = changed;
+    emailSubmit.hidden = !changed;
+    emailNext.textContent = changed ? "Skip email update" : "Next";
+  };
+  const updatePasswordStep = () => {
+    const changed = passwordInputs.some((input) => input.value.length > 0);
+    passwordSubmit.hidden = !changed;
+    passwordFinish.textContent = changed ? "Skip password change" : "Finish without changing";
+  };
+
+  emailField.addEventListener("input", updateEmailStep);
+  emailNext.addEventListener("click", () => showStep(2));
+  $("#account-password-back").addEventListener("click", () => showStep(1));
+  passwordInputs.forEach((input) => input.addEventListener("input", updatePasswordStep));
+  passwordFinish.addEventListener("click", () => location.assign($("#account-back-link").href));
+  updateEmailStep();
+  updatePasswordStep();
+
+  emailForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    const button = form.querySelector('button[type="submit"]');
-    button.disabled = true;
+    if (emailField.value.trim().toLowerCase() === savedEmail) {
+      showStep(2);
+      return;
+    }
+    emailSubmit.disabled = true;
     try {
       const { user: updatedUser } = await request("/api/auth/account/email", {
         method: "PATCH",
-        body: JSON.stringify({ email: form.elements.email.value.trim(), currentPassword: form.elements.currentPassword.value }),
+        body: JSON.stringify({ email: emailField.value.trim(), currentPassword: emailPassword.value }),
       });
-      $("#account-email").value = updatedUser.email;
-      form.elements.currentPassword.value = "";
+      savedEmail = updatedUser.email.toLowerCase();
+      emailField.value = updatedUser.email;
+      emailPassword.value = "";
       showAlert($("#account-email-alert"), "Email updated.", "success");
+      updateEmailStep();
+      showStep(2);
     } catch (error) {
       showAlert($("#account-email-alert"), error.message);
-    } finally { button.disabled = false; }
+    } finally { emailSubmit.disabled = false; }
   });
 
-  $("#account-password-form").addEventListener("submit", async (event) => {
+  passwordForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form));
+    const values = Object.fromEntries(new FormData(passwordForm));
+    if (!values.currentPassword || values.newPassword.length < 12 || !values.confirmPassword) {
+      showAlert($("#account-password-alert"), "Enter your current password and a new password with at least 12 characters.");
+      return;
+    }
     if (values.newPassword !== values.confirmPassword) {
       showAlert($("#account-password-alert"), "The new passwords do not match.");
       return;
     }
-    const button = form.querySelector('button[type="submit"]');
-    button.disabled = true;
+    passwordSubmit.disabled = true;
     try {
       await request("/api/auth/password/change", {
         method: "POST",
         body: JSON.stringify({ currentPassword: values.currentPassword, newPassword: values.newPassword }),
       });
-      form.reset();
+      passwordForm.reset();
+      updatePasswordStep();
       showAlert($("#account-password-alert"), "Password updated. Other signed-in sessions have been ended.", "success");
     } catch (error) {
       showAlert($("#account-password-alert"), error.message);
-    } finally { button.disabled = false; }
+    } finally { passwordSubmit.disabled = false; }
   });
 }
 

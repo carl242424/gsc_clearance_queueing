@@ -46,6 +46,12 @@ h1 { margin: 7px 0 0; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.04em;
 .password-toggle:focus-visible, .forgot-password-link:focus-visible { outline: 3px solid #81a5ff; outline-offset: 2px; border-radius: 4px; }
 .forgot-password-link { display: block; width: fit-content; margin: -3px 0 18px auto; color: #315dc2; font-size: 13px; font-weight: 650; }
 .forgot-password-copy { margin: 16px 0 24px; line-height: 1.6; }
+.account-progress { margin: 24px 0; }
+.account-progress-track { height: 8px; overflow: hidden; border-radius: 99px; background: #e6ebf4; }
+.account-progress-track span { display: block; width: 50%; height: 100%; border-radius: inherit; background: #275bd6; transition: width .2s ease; }
+.account-progress p { margin: 8px 0 0; font-size: 13px; }
+.account-step-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.account-step-actions [hidden] { display: none; }
 .input:focus { border-color: #4775dd; box-shadow: 0 0 0 3px #4775dd1f; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
