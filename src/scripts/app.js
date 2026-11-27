@@ -310,6 +310,15 @@ async function initAccountPage() {
   const passwordInputs = [passwordForm.elements.currentPassword, passwordForm.elements.newPassword, passwordForm.elements.confirmPassword];
   const passwordSubmit = $("#account-password-submit");
   const passwordFinish = $("#account-password-finish");
+  passwordForm.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
+    const input = $(`#${toggle.dataset.passwordToggle}`);
+    toggle.addEventListener("click", () => {
+      const showing = input.type === "password";
+      input.type = showing ? "text" : "password";
+      toggle.textContent = showing ? "Hide" : "Show";
+      toggle.setAttribute("aria-pressed", String(showing));
+    });
+  });
 
   const showStep = (step) => {
     const emailActive = step === 1;

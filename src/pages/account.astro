@@ -28,9 +28,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <p class="muted">Leave these fields blank to finish without changing your password.</p>
         <div id="account-password-alert" class="alert" role="alert"></div>
         <form id="account-password-form">
-          <div class="field"><label for="password-current">Current password</label><input class="input" id="password-current" name="currentPassword" type="password" autocomplete="current-password" /></div>
-          <div class="field"><label for="password-new">New password</label><input class="input" id="password-new" name="newPassword" type="password" minlength="12" autocomplete="new-password" /></div>
-          <div class="field"><label for="password-confirm">Confirm new password</label><input class="input" id="password-confirm" name="confirmPassword" type="password" minlength="12" autocomplete="new-password" /></div>
+          <div class="field"><label for="password-current">Current password</label><div class="password-control"><input class="input" id="password-current" name="currentPassword" type="password" autocomplete="current-password" /><button class="password-toggle" type="button" data-password-toggle="password-current" aria-controls="password-current" aria-pressed="false">Show</button></div></div>
+          <div class="field"><label for="password-new">New password</label><div class="password-control"><input class="input" id="password-new" name="newPassword" type="password" minlength="12" autocomplete="new-password" /><button class="password-toggle" type="button" data-password-toggle="password-new" aria-controls="password-new" aria-pressed="false">Show</button></div></div>
+          <div class="field"><label for="password-confirm">Confirm new password</label><div class="password-control"><input class="input" id="password-confirm" name="confirmPassword" type="password" minlength="12" autocomplete="new-password" /><button class="password-toggle" type="button" data-password-toggle="password-confirm" aria-controls="password-confirm" aria-pressed="false">Show</button></div></div>
           <div class="account-step-actions">
             <button class="btn btn-secondary" id="account-password-back" type="button">Back</button>
             <button class="btn btn-secondary" id="account-password-finish" type="button">Finish without changing</button>
