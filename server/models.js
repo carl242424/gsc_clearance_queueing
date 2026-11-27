@@ -23,11 +23,12 @@ const ticketSchema = new mongoose.Schema({
   queueNumber: { type: String, required: true },
   queueSequence: { type: Number, required: true },
   queueDate: { type: String, required: true },
-  status: { type: String, enum: ["waiting", "serving", "completed", "no-show"], default: "waiting", required: true },
+  status: { type: String, enum: ["waiting", "serving", "completed", "no-show", "cancelled"], default: "waiting", required: true },
   joinedAt: { type: Date, default: Date.now, required: true },
   calledAt: Date,
   completedAt: Date,
   noShowAt: Date,
+  cancelledAt: Date,
   callExpiresAt: Date,
 }, { versionKey: false });
 ticketSchema.index({ queueDate: 1, queueNumber: 1 }, { unique: true });

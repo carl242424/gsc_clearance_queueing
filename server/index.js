@@ -514,6 +514,7 @@ function publicTicket(ticket) {
     calledAt: ticket.calledAt || null,
     completedAt: ticket.completedAt || null,
     noShowAt: ticket.noShowAt || null,
+    cancelledAt: ticket.cancelledAt || null,
     callExpiresAt: ticket.callExpiresAt || null,
   };
 }
@@ -648,6 +649,26 @@ app.get("/api/queue/:id", asyncRoute(async (req, res) => {
   const ticket = await QueueTicket.findById(req.params.id).lean();
   if (!ticket) return fail(res, 404, "Ticket not found.");
   res.json({ ticket: publicTicket(ticket) });
+}));
+
+app.post("/api/queue/:id/leave", asyncRoute(async (req, res) => {
+  if (!idSchema.safeParse(req.params.id).success) return fail(res, 404, "Ticket not found.");
+  const ticket = await QueueTicket.findOneAndUpdate(
+    { _id: req.params.id, status: "waiting" },
+    { $set: { status: "cancelled", cancelledAt: new Date() } },
+    { new: true },
+  );
+  if (ticket) {
+    await record(ticket, "left_queue", "Student");
+    publishQueueUpdate();
+    return res.json({ ticket: publicTicket(ticket) });
+  }
+  const existing = await QueueTicket.findById(req.params.id).lean();
+  if (!existing) return fail(res, 404, "Ticket not found.");
+  if (["cancelled", "completed", "no-show"].includes(existing.status)) {
+    return res.json({ ticket: publicTicket(existing) });
+  }
+  return fail(res, 409, "Your ticket is currently being served. Please ask staff for assistance.");
 }));
 
 function operationError(message, status) {

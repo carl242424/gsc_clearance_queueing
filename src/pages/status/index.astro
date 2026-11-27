@@ -18,9 +18,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <h1 id="ticket-message-title">You are next in the queue</h1>
         <p id="ticket-message-copy">Please stay nearby — you're up next.</p>
       </section>
+      <div id="ticket-quit-alert" class="alert" role="alert"></div>
       <footer class="ticket-actions">
         <button class="btn btn-primary ticket-notify" id="ticket-notify" type="button"><span aria-hidden="true">♧</span> Enable notifications</button>
-        <a class="ticket-quit" href="/join">Quit the queue</a>
+        <a class="ticket-quit" id="ticket-quit" href="/join">Quit the queue</a>
       </footer>
       <div class="ticket-accessible-details" aria-label="Ticket details">
         <span>Student ID: <strong id="ticket-student"></strong></span>

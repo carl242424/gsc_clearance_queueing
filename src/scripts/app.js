@@ -54,7 +54,7 @@ function formatDate(value) {
 }
 
 function statusBadge(status) {
-  const labels = { waiting: "Waiting", serving: "Called", completed: "Served", "no-show": "No-show", joined: "Joined", called: "Called", no_show: "No-show" };
+  const labels = { waiting: "Waiting", serving: "Called", completed: "Served", "no-show": "No-show", cancelled: "Cancelled", joined: "Joined", called: "Called", no_show: "No-show", left_queue: "Left queue" };
   const safe = escapeHtml(status);
   return `<span class="admin-status" data-status="${safe}">${labels[status] || escapeHtml(status.replaceAll("_", " "))}</span>`;
 }
@@ -128,6 +128,10 @@ async function initJoinPage() {
   };
   await loadQueueStatus();
   connectLive({ onQueueStatus: renderQueueStatus });
+  const quitTicket = new URLSearchParams(location.search).get("quit");
+  if (quitTicket && localStorage.getItem("clearance-ticket") === quitTicket) {
+    localStorage.removeItem("clearance-ticket");
+  }
   const saved = localStorage.getItem("clearance-ticket");
   if (saved) {
     try {
@@ -166,6 +170,20 @@ async function initStatusPage() {
   const pathId = pathSegments.at(-1) === "status" ? "" : pathSegments.at(-1);
   const id = decodeURIComponent(pathId || new URLSearchParams(location.search).get("ticket") || "");
   $("#ticket-notify")?.addEventListener("click", enableTicketNotifications, { once: true });
+  $("#ticket-quit")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.confirm("Leave the queue? Your waiting ticket will be canceled.")) return;
+    const button = event.currentTarget;
+    button.setAttribute("aria-disabled", "true");
+    try {
+      await request(`/api/queue/${encodeURIComponent(id)}/leave`, { method: "POST" });
+      if (localStorage.getItem("clearance-ticket") === id) localStorage.removeItem("clearance-ticket");
+      location.assign(`/join?quit=${encodeURIComponent(id)}`);
+    } catch (error) {
+      showAlert($("#ticket-quit-alert"), error.message);
+      button.removeAttribute("aria-disabled");
+    }
+  });
   const load = async () => {
     try {
       const { ticket } = await request(`/api/queue/${encodeURIComponent(id)}`);
@@ -178,7 +196,7 @@ async function initStatusPage() {
       $("#ticket-joined").textContent = formatDate(ticket.joinedAt);
       $("#ticket-current").textContent = currentServing || "—";
       $("#ticket-ahead").textContent = String(ahead);
-      $("#ticket-wait").textContent = ticket.status === "serving" ? "You are being served" : ticket.status === "completed" || ticket.status === "no-show" ? "Queue finished" : estimatedWaitMinutes ? `About ${estimatedWaitMinutes} minutes` : "Up next";
+      $("#ticket-wait").textContent = ticket.status === "serving" ? "You are being served" : ["completed", "no-show", "cancelled"].includes(ticket.status) ? "Queue finished" : estimatedWaitMinutes ? `About ${estimatedWaitMinutes} minutes` : "Up next";
       updateTicketMessage(ticket.status, ahead);
     } catch {
       $("#ticket-loading").textContent = "This ticket link is invalid or unavailable. Please return to the queue page to join.";
@@ -210,9 +228,10 @@ function updateTicketMessage(status, ahead = 0) {
     serving: "It's your turn!",
     completed: "Your clearance is complete",
     "no-show": "Your ticket has expired",
+    cancelled: "You left the queue",
   };
-  const tags = { waiting: count <= 1 ? "Almost there!" : "You're in line", serving: "Now serving", completed: "Completed", "no-show": "Queue ended" };
-  const copy = { waiting: count <= 1 ? "Please stay nearby — you're up next." : "We'll let you know when your turn is close.", serving: "Please proceed to the service desk.", completed: "Thank you. You may safely close this page.", "no-show": "Please return to the queue desk for assistance." };
+  const tags = { waiting: count <= 1 ? "Almost there!" : "You're in line", serving: "Now serving", completed: "Completed", "no-show": "Queue ended", cancelled: "Queue exited" };
+  const copy = { waiting: count <= 1 ? "Please stay nearby — you're up next." : "We'll let you know when your turn is close.", serving: "Please proceed to the service desk.", completed: "Thank you. You may safely close this page.", "no-show": "Please return to the queue desk for assistance.", cancelled: "Your place in line was canceled. Return to the queue page if you need service." };
   $("#ticket-message-title").textContent = titles[status] || titles.waiting;
   $("#ticket-message-tag").textContent = tags[status] || tags.waiting;
   $("#ticket-message-copy").textContent = copy[status] || copy.waiting;
