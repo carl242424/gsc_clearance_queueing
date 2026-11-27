@@ -60,12 +60,13 @@ const sessionMiddleware = session({
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: mongoUri, collectionName: "sessions", ttl: 60 * 60 * 8 }),
+  store: MongoStore.create({ mongoUrl: mongoUri, collectionName: "sessions", ttl: 60 * 60 * 24 * 365 }),
+  rolling: true,
   cookie: {
     httpOnly: true,
     secure: isProduction,
     sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 8,
+    maxAge: 1000 * 60 * 60 * 24 * 365,
   },
 });
 
@@ -132,6 +133,10 @@ const loginSchema = z.object({
   identity: z.string().trim().min(1).max(254),
   password: z.string().min(1).max(200),
 });
+const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  newPassword: z.string().min(12).max(200),
+});
 
 function dayKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -161,6 +166,10 @@ function requireRole(...roles) {
         if (req.path.startsWith("/api/")) return fail(res, 401, "This account is inactive.");
         return res.redirect("/");
       }
+      if (user.mustChangePassword) {
+        if (req.path.startsWith("/api/")) return fail(res, 403, "Change your temporary password before continuing.");
+        return res.redirect("/change-password");
+      }
       if (!roles.includes(user.role)) return fail(res, 403, "You do not have permission to view this page.");
       req.session.user.role = user.role;
       req.session.user.name = user.name;
@@ -170,11 +179,11 @@ function requireRole(...roles) {
 }
 
 async function ensureActive(userId) {
-  return User.findOne({ _id: userId, isActive: true }).select("name email username role isActive").lean();
+  return User.findOne({ _id: userId, isActive: true }).select("name email username role isActive mustChangePassword").lean();
 }
 
 function userView(user) {
-  return { id: String(user._id), name: user.name, email: user.email, username: user.username, role: user.role, isActive: user.isActive };
+  return { id: String(user._id), name: user.name, email: user.email, username: user.username, role: user.role, isActive: user.isActive, mustChangePassword: user.mustChangePassword };
 }
 
 async function record(ticket, action, actor) {
@@ -284,6 +293,20 @@ app.get("/api/auth/me", asyncRoute(async (req, res) => {
     return fail(res, 401, "This account is inactive.");
   }
   res.json({ user: userView(user) });
+}));
+
+app.post("/api/auth/password/change", loginLimiter, asyncRoute(async (req, res) => {
+  if (!req.session.user?.id) return fail(res, 401, "Please sign in to continue.");
+  const parsed = passwordChangeSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, "Your new password must contain at least 12 characters.");
+  const user = await User.findOne({ _id: req.session.user.id, isActive: true }).select("+passwordHash");
+  if (!user) return fail(res, 401, "This account is inactive.");
+  if (!(await bcrypt.compare(parsed.data.currentPassword, user.passwordHash))) return fail(res, 401, "The temporary/current password is incorrect.");
+  if (parsed.data.currentPassword === parsed.data.newPassword) return fail(res, 400, "Choose a password different from your current password.");
+  user.passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
+  user.mustChangePassword = false;
+  await user.save();
+  res.json({ success: true });
 }));
 
 app.post("/api/auth/logout", (req, res, next) => {
@@ -593,11 +616,11 @@ const createStaffSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.email().max(254),
   username: z.string().trim().min(3).max(40).regex(/^[A-Za-z0-9._-]+$/),
-  password: z.string().min(10).max(200),
+  password: z.string().min(12).max(200),
 });
 app.post("/api/admin/staff", requireRole("admin"), asyncRoute(async (req, res) => {
   const parsed = createStaffSchema.safeParse(req.body);
-  if (!parsed.success) return fail(res, 400, "Enter a valid name, email, username, and password (at least 10 characters).");
+  if (!parsed.success) return fail(res, 400, "Enter a valid name, email, username, and temporary password (at least 12 characters).");
   try {
     const staff = await User.create({
       ...parsed.data,
@@ -606,6 +629,7 @@ app.post("/api/admin/staff", requireRole("admin"), asyncRoute(async (req, res) =
       passwordHash: await bcrypt.hash(parsed.data.password, 12),
       role: "staff",
       isActive: true,
+      mustChangePassword: true,
     });
     res.status(201).json({ staff: userView(staff) });
   } catch (error) {
@@ -615,14 +639,26 @@ app.post("/api/admin/staff", requireRole("admin"), asyncRoute(async (req, res) =
 }));
 
 app.patch("/api/admin/staff/:id", requireRole("admin"), asyncRoute(async (req, res) => {
-  const parsed = z.object({ isActive: z.boolean() }).safeParse(req.body);
-  if (!parsed.success) return fail(res, 400, "Provide a valid account status.");
+  const parsed = z.object({
+    isActive: z.boolean().optional(),
+    temporaryPassword: z.string().min(12).max(200).optional(),
+  }).refine((value) => value.isActive !== undefined || value.temporaryPassword !== undefined).safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, "Provide a valid account status or temporary password (at least 12 characters).");
+  const updates = {};
+  if (parsed.data.isActive !== undefined) updates.isActive = parsed.data.isActive;
+  if (parsed.data.temporaryPassword) {
+    updates.passwordHash = await bcrypt.hash(parsed.data.temporaryPassword, 12);
+    updates.mustChangePassword = true;
+  }
   const staff = await User.findOneAndUpdate(
     { _id: req.params.id, role: "staff" },
-    { $set: { isActive: parsed.data.isActive } },
+    { $set: updates },
     { new: true },
   );
   if (!staff) return fail(res, 404, "Staff account not found.");
+  if (parsed.data.temporaryPassword) {
+    await mongoose.connection.collection("sessions").deleteMany({ "session.user.id": String(staff._id) });
+  }
   res.json({ staff: userView(staff) });
 }));
 

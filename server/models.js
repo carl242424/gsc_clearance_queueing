@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true, select: false },
   role: { type: String, enum: ["admin", "staff"], required: true },
   isActive: { type: Boolean, default: true },
+  mustChangePassword: { type: Boolean, default: false },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ username: 1 }, { unique: true });

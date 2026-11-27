@@ -71,6 +71,10 @@ async function requireUser(roles) {
   const allowedRoles = Array.isArray(roles) ? roles : [roles];
   try {
     const { user } = await request("/api/auth/me");
+    if (user.mustChangePassword && location.pathname !== "/change-password") {
+      location.replace("/change-password");
+      return null;
+    }
     if (!allowedRoles.includes(user.role)) {
       location.replace(user.role === "admin" ? "/admin/dashboard" : "/staff/dashboard");
       return null;
@@ -225,9 +229,17 @@ async function enableTicketNotifications() {
 
 async function initLoginPage() {
   const form = $("#login-form");
+  const password = form.elements.password;
+  const togglePassword = $("#toggle-password");
+  togglePassword?.addEventListener("click", () => {
+    const showing = password.type === "password";
+    password.type = showing ? "text" : "password";
+    togglePassword.textContent = showing ? "Hide" : "Show";
+    togglePassword.setAttribute("aria-pressed", String(showing));
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const button = form.querySelector("button");
+    const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
       const { user } = await request("/api/auth/login", {
@@ -237,9 +249,40 @@ async function initLoginPage() {
           password: form.elements.password.value,
         }),
       });
-      location.assign(user.role === "admin" ? "/admin/dashboard" : "/staff/dashboard");
+      location.assign(user.mustChangePassword ? "/change-password" : user.role === "admin" ? "/admin/dashboard" : "/staff/dashboard");
     } catch (error) {
       showAlert($("#login-alert"), error.message);
+      button.disabled = false;
+    }
+  });
+}
+
+async function initChangePasswordPage() {
+  let user;
+  try {
+    ({ user } = await request("/api/auth/me"));
+  } catch {
+    location.replace("/");
+    return;
+  }
+  const form = $("#password-change-form");
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(form));
+    if (values.newPassword !== values.confirmPassword) {
+      showAlert($("#password-change-alert"), "The new passwords do not match.");
+      return;
+    }
+    const button = form.querySelector("button[type=submit]");
+    button.disabled = true;
+    try {
+      await request("/api/auth/password/change", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: values.currentPassword, newPassword: values.newPassword }),
+      });
+      location.assign(user.role === "admin" ? "/admin/dashboard" : "/staff/dashboard");
+    } catch (error) {
+      showAlert($("#password-change-alert"), error.message);
       button.disabled = false;
     }
   });
@@ -369,7 +412,7 @@ async function initStaffPage() {
   connectAdminStatus();
   const list = async () => {
     const { staff } = await request("/api/admin/staff");
-    $("#staff-list").innerHTML = staff.length ? staff.map((person) => `<tr><td><strong>${escapeHtml(person.name)}</strong></td><td>${escapeHtml(person.email)}</td><td>${escapeHtml(person.username)}</td><td>${person.isActive ? '<span class="admin-status" data-status="completed">Active</span>' : '<span class="admin-status">Inactive</span>'}</td><td class="admin-menu-cell"><details class="admin-row-menu"><summary aria-label="Actions for ${escapeHtml(person.name)}">···</summary><div><button class="admin-button ${person.isActive ? "admin-button-danger" : ""}" type="button" data-staff-id="${escapeHtml(person.id)}" data-active="${person.isActive}">${person.isActive ? "Deactivate" : "Activate"}</button></div></details></td></tr>`).join("") : '<tr><td colspan="5" class="admin-empty">No staff accounts have been added.</td></tr>';
+    $("#staff-list").innerHTML = staff.length ? staff.map((person) => `<tr><td><strong>${escapeHtml(person.name)}</strong></td><td>${escapeHtml(person.email)}</td><td>${escapeHtml(person.username)}</td><td>${person.isActive ? '<span class="admin-status" data-status="completed">Active</span>' : '<span class="admin-status">Inactive</span>'}${person.mustChangePassword ? '<div class="admin-helper">Temporary password pending</div>' : ""}</td><td class="admin-menu-cell"><details class="admin-row-menu"><summary aria-label="Actions for ${escapeHtml(person.name)}">···</summary><div><button class="admin-button" type="button" data-reset-staff-id="${escapeHtml(person.id)}">Set temporary password</button><button class="admin-button ${person.isActive ? "admin-button-danger" : ""}" type="button" data-staff-id="${escapeHtml(person.id)}" data-active="${person.isActive}">${person.isActive ? "Deactivate" : "Activate"}</button></div></details></td></tr>`).join("") : '<tr><td colspan="5" class="admin-empty">No staff accounts have been added.</td></tr>';
   };
   await list();
   $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
@@ -387,6 +430,20 @@ async function initStaffPage() {
     finally { button.disabled = false; }
   });
   $("#staff-list").addEventListener("click", async (event) => {
+    const resetButton = event.target.closest("[data-reset-staff-id]");
+    if (resetButton) {
+      const temporaryPassword = prompt("Enter a temporary password with at least 12 characters. The staff member must change it at next sign-in:");
+      if (!temporaryPassword) return;
+      try {
+        await request(`/api/admin/staff/${encodeURIComponent(resetButton.dataset.resetStaffId)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ temporaryPassword }),
+        });
+        showAlert($("#page-alert"), "Temporary password set. Share it privately with the staff member.", "success");
+        await list();
+      } catch (error) { showAlert($("#page-alert"), error.message); }
+      return;
+    }
     const button = event.target.closest("[data-staff-id]");
     if (!button) return;
     try {
@@ -485,6 +542,7 @@ async function initQrPage() {
 const handlers = {
   "student-join": initJoinPage,
   login: initLoginPage,
+  "change-password": initChangePasswordPage,
   "staff-dashboard": () => initDashboard("staff"),
   "admin-dashboard": () => initDashboard("admin"),
   "admin-staff": initStaffPage,

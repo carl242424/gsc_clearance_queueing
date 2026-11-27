@@ -11,7 +11,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <div id="login-alert" class="alert" role="alert"></div>
         <form id="login-form">
           <div class="field"><label for="identity">Email</label><input class="input" id="identity" name="identity" autocomplete="username" placeholder="Enter your email" required autofocus /></div>
-          <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required /></div>
+          <div class="field"><label for="password">Password</label><div class="password-control"><input class="input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required /><button class="password-toggle" id="toggle-password" type="button" aria-controls="password" aria-pressed="false">Show</button></div></div>
+          <a class="forgot-password-link" href="/forgot-password">Forgot password?</a>
           <button class="btn btn-primary login-button" type="submit">Sign in</button>
         </form>
         <a class="split-student-link" href="/join">Student? Join the queue with your ID</a>

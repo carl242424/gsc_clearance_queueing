@@ -33,7 +33,7 @@ try {
       continue;
     }
     const passwordHash = await bcrypt.hash(account.password, 12);
-    await User.create({ name: account.name.trim(), email, username, passwordHash, role: account.role, isActive: true });
+    await User.create({ name: account.name.trim(), email, username, passwordHash, role: account.role, isActive: true, mustChangePassword: account.role === "staff" });
     console.log(`Created ${account.role} account for ${email}.`);
   }
 } finally {
