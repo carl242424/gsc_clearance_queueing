@@ -1,4 +1,25 @@
 {
   "installCommand": "env -u NPM_CONFIG_CACHE_DIR -u npm_config_cache_dir npm install",
-  "buildCommand": "env -u NPM_CONFIG_CACHE_DIR -u npm_config_cache_dir npm run build"
+  "buildCommand": "env -u NPM_CONFIG_CACHE_DIR -u npm_config_cache_dir npm run build",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://gsc-clearance-queueing.onrender.com/api/:path*"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "https://gsc-clearance-queueing.onrender.com/socket.io/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    }
+  ]
 }
