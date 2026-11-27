@@ -288,6 +288,54 @@ async function initChangePasswordPage() {
   });
 }
 
+async function initAccountPage() {
+  const user = await requireUser(["admin", "staff"]);
+  if (!user) return;
+  $("#account-name").textContent = `${user.name} · ${user.role === "admin" ? "Administrator" : "Staff"}`;
+  $("#account-email").value = user.email;
+  $("#account-back-link").href = user.role === "admin" ? "/admin/dashboard" : "/staff/dashboard";
+
+  $("#account-email-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const { user: updatedUser } = await request("/api/auth/account/email", {
+        method: "PATCH",
+        body: JSON.stringify({ email: form.elements.email.value.trim(), currentPassword: form.elements.currentPassword.value }),
+      });
+      $("#account-email").value = updatedUser.email;
+      form.elements.currentPassword.value = "";
+      showAlert($("#account-email-alert"), "Email updated.", "success");
+    } catch (error) {
+      showAlert($("#account-email-alert"), error.message);
+    } finally { button.disabled = false; }
+  });
+
+  $("#account-password-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = Object.fromEntries(new FormData(form));
+    if (values.newPassword !== values.confirmPassword) {
+      showAlert($("#account-password-alert"), "The new passwords do not match.");
+      return;
+    }
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await request("/api/auth/password/change", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: values.currentPassword, newPassword: values.newPassword }),
+      });
+      form.reset();
+      showAlert($("#account-password-alert"), "Password updated. Other signed-in sessions have been ended.", "success");
+    } catch (error) {
+      showAlert($("#account-password-alert"), error.message);
+    } finally { button.disabled = false; }
+  });
+}
+
 async function loadDashboard(role) {
   const data = await request("/api/queue/dashboard");
   const timerInput = $("#call-duration");
@@ -542,6 +590,7 @@ async function initQrPage() {
 const handlers = {
   "student-join": initJoinPage,
   login: initLoginPage,
+  account: initAccountPage,
   "change-password": initChangePasswordPage,
   "staff-dashboard": () => initDashboard("staff"),
   "admin-dashboard": () => initDashboard("admin"),

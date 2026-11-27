@@ -137,6 +137,10 @@ const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1).max(200),
   newPassword: z.string().min(12).max(200),
 });
+const emailUpdateSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  email: z.email().max(254),
+});
 
 function dayKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -295,6 +299,24 @@ app.get("/api/auth/me", asyncRoute(async (req, res) => {
   res.json({ user: userView(user) });
 }));
 
+app.patch("/api/auth/account/email", loginLimiter, asyncRoute(async (req, res) => {
+  if (!req.session.user?.id) return fail(res, 401, "Please sign in to continue.");
+  const parsed = emailUpdateSchema.safeParse(req.body);
+  if (!parsed.success) return fail(res, 400, "Enter a valid email and your current password.");
+  const user = await User.findOne({ _id: req.session.user.id, isActive: true }).select("+passwordHash");
+  if (!user) return fail(res, 401, "This account is inactive.");
+  if (user.mustChangePassword) return fail(res, 403, "Change your temporary password before updating account details.");
+  if (!(await bcrypt.compare(parsed.data.currentPassword, user.passwordHash))) return fail(res, 401, "Your current password is incorrect.");
+  user.email = parsed.data.email.trim().toLowerCase();
+  try {
+    await user.save();
+  } catch (error) {
+    if (error.code === 11000) return fail(res, 409, "That email address is already in use.");
+    throw error;
+  }
+  res.json({ user: userView(user) });
+}));
+
 app.post("/api/auth/password/change", loginLimiter, asyncRoute(async (req, res) => {
   if (!req.session.user?.id) return fail(res, 401, "Please sign in to continue.");
   const parsed = passwordChangeSchema.safeParse(req.body);
@@ -306,6 +328,10 @@ app.post("/api/auth/password/change", loginLimiter, asyncRoute(async (req, res) 
   user.passwordHash = await bcrypt.hash(parsed.data.newPassword, 12);
   user.mustChangePassword = false;
   await user.save();
+  await mongoose.connection.collection("sessions").deleteMany({
+    "session.user.id": String(user._id),
+    _id: { $ne: req.sessionID },
+  });
   res.json({ success: true });
 }));
 
@@ -723,6 +749,7 @@ if (isProduction) {
     ["/admin/settings", ["admin"]],
     ["/admin/history", ["admin"]],
     ["/qr", ["admin"]],
+    ["/account", ["admin", "staff"]],
   ]);
   app.use((req, res, next) => {
     let route;

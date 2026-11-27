@@ -53,6 +53,7 @@ Visit `/qr` and print the single QR code. It encodes `${PUBLIC_APP_URL}/join`; i
 - Staff can use **Forgot password?** to get instructions for requesting a temporary password from an administrator. Admins can issue or reset staff temporary passwords in Staff Accounts; staff must change them at next sign-in.
 - Staff/admin sessions persist across browser restarts and roll forward while active, with a one-year idle expiry. Logging out clears the session.
 - `/staff/dashboard` and `/staff/history` are available to staff and admins. `/admin/dashboard`, `/admin/staff`, `/admin/settings`, `/admin/history`, and `/qr` are admin-only.
+- `/account` lets signed-in staff and admins update their email address and password after confirming their current password.
 - Express protects production dashboard routes and API endpoints. The Astro dev/preview middleware checks the API session before serving protected dashboard pages.
 
 Staff/admin sockets join `staff-room` and receive full dashboard queue data. Unauthenticated sockets join `student-room` and receive only queue open/closed state, waiting count, current queue number, and individual position data after watching their ticket. Queue-management socket events are rejected unless the socket belongs to `staff-room`.

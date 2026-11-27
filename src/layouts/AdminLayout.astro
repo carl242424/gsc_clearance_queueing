@@ -31,7 +31,7 @@ const { title, page, active = "overview", role = "admin" } = Astro.props;
             <button class="admin-user-button" id="admin-user-toggle" type="button" aria-expanded="false" aria-controls="admin-user-menu">
               <span class="admin-user-avatar" id="admin-user-avatar" aria-hidden="true">{role === "staff" ? "S" : "A"}</span><span id="user-name">{role === "staff" ? "Staff" : "Administrator"}</span><span class="admin-user-caret" aria-hidden="true">⌄</span>
             </button>
-            <div class="admin-user-menu" id="admin-user-menu" hidden><button type="button" id="logout">Sign out</button></div>
+            <div class="admin-user-menu" id="admin-user-menu" hidden><a href="/account">Account settings</a><button type="button" id="logout">Sign out</button></div>
           </div>
         </div>
       </header>

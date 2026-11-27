@@ -31,8 +31,8 @@ body[data-page^="admin-"], body[data-page^="staff-"] { --ad-bg: #f3f4f6; --ad-su
 .admin-user-caret { color: var(--ad-muted); }
 .admin-user-menu { position: absolute; top: calc(100% + 5px); right: 0; z-index: 40; min-width: 140px; padding: 4px; border: 1px solid var(--ad-border); border-radius: var(--ad-radius); background: #fff; box-shadow: var(--ad-shadow-menu); }
 .admin-user-menu[hidden] { display: none; }
-.admin-user-menu button { width: 100%; padding: 8px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--ad-text); text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
-.admin-user-menu button:hover { background: #f3f4f6; }
+.admin-user-menu button, .admin-user-menu a { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--ad-text); text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+.admin-user-menu button:hover, .admin-user-menu a:hover { background: #f3f4f6; }
 .admin-app :focus-visible { outline: 2px solid var(--ad-accent); outline-offset: 2px; }
 .admin-main { width: min(100%, 1328px); margin: 0 auto; padding: 24px; }
 .admin-page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
