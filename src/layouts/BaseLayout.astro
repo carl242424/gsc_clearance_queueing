@@ -12,6 +12,18 @@ const { title = "Clearance Queue", page = "" } = Astro.props;
   </head>
   <body data-page={page}>
     <slot />
+    <dialog class="action-modal" id="action-modal" aria-labelledby="action-modal-title" aria-describedby="action-modal-message">
+      <form id="action-modal-form" class="action-modal-card">
+        <h2 id="action-modal-title"></h2>
+        <p id="action-modal-message"></p>
+        <label id="action-modal-input-label" class="action-modal-input-label" for="action-modal-input" hidden></label>
+        <input id="action-modal-input" class="input action-modal-input" type="password" autocomplete="new-password" hidden />
+        <div class="action-modal-actions">
+          <button class="admin-button" id="action-modal-cancel" type="button">Cancel</button>
+          <button class="admin-button admin-button-primary" id="action-modal-confirm" type="submit">Continue</button>
+        </div>
+      </form>
+    </dialog>
     <script>
       import "../scripts/app.js";
     </script>

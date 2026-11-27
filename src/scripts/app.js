@@ -35,6 +35,64 @@ function showAlert(target, message, type = "error") {
   target.className = `alert show ${type}`;
 }
 
+function showActionModal({ title, message, confirmLabel = "Continue", cancelLabel = "Cancel", danger = false, inputLabel = "", minLength = 0 } = {}) {
+  const dialog = $("#action-modal");
+  const form = $("#action-modal-form");
+  const input = $("#action-modal-input");
+  const inputLabelElement = $("#action-modal-input-label");
+  const confirmButton = $("#action-modal-confirm");
+  $("#action-modal-title").textContent = title;
+  $("#action-modal-message").textContent = message;
+  confirmButton.textContent = confirmLabel;
+  confirmButton.classList.toggle("admin-button-danger", danger);
+  $("#action-modal-cancel").textContent = cancelLabel;
+  input.hidden = !inputLabel;
+  inputLabelElement.hidden = !inputLabel;
+  inputLabelElement.textContent = inputLabel;
+  input.value = "";
+  input.minLength = minLength;
+  input.required = Boolean(inputLabel);
+  input.autocomplete = inputLabel ? "new-password" : "off";
+  return new Promise((resolve) => {
+    let settled = false;
+    const onBackdrop = (event) => {
+      if (event.target === dialog) finish(null);
+    };
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      dialog.removeEventListener("close", onClose);
+      dialog.removeEventListener("click", onBackdrop);
+      dialog.close();
+      resolve(result);
+    };
+    const onClose = () => {
+      if (settled) return;
+      settled = true;
+      resolve(null);
+    };
+    dialog.addEventListener("close", onClose, { once: true });
+    $("#action-modal-cancel").onclick = () => finish(null);
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      if (inputLabel && input.value.length < minLength) {
+        input.setCustomValidity(`Use at least ${minLength} characters.`);
+        input.reportValidity();
+        input.setCustomValidity("");
+        return;
+      }
+      finish(inputLabel ? input.value : true);
+    };
+    dialog.addEventListener("click", onBackdrop);
+    dialog.showModal();
+    (inputLabel ? input : confirmButton).focus();
+  });
+}
+
+function confirmAction(title, message, options = {}) {
+  return showActionModal({ title, message, ...options });
+}
+
 function connectLive({ onDashboard, onQueueStatus, onPosition, onConnection } = {}) {
   if (socket) socket.disconnect();
   socket = io(API, { withCredentials: true, transports: ["websocket", "polling"] });
@@ -146,7 +204,8 @@ async function initJoinPage() {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!queueOpen || !validStudentId(input.value.trim())) return;
-    if (!window.confirm("You're about to join the Clearance queue. Continue?")) return;
+    const joinConfirmed = await confirmAction("Join the queue?", "This will add you to today's Clearance queue and create a ticket for your place in line.", { confirmLabel: "Join queue" });
+    if (!joinConfirmed) return;
     button.disabled = true;
     button.textContent = "Joining…";
     try {
@@ -172,7 +231,8 @@ async function initStatusPage() {
   $("#ticket-notify")?.addEventListener("click", enableTicketNotifications, { once: true });
   $("#ticket-quit")?.addEventListener("click", async (event) => {
     event.preventDefault();
-    if (!window.confirm("Leave the queue? Your waiting ticket will be canceled.")) return;
+    const leaveConfirmed = await confirmAction("Leave the queue?", "Your waiting ticket will be canceled and your place in line will be lost.", { confirmLabel: "Leave queue", danger: true });
+    if (!leaveConfirmed) return;
     const button = event.currentTarget;
     button.setAttribute("aria-disabled", "true");
     try {
@@ -292,6 +352,7 @@ async function initChangePasswordPage() {
       showAlert($("#password-change-alert"), "The new passwords do not match.");
       return;
     }
+    if (!await confirmAction("Change your password?", "Your new password will replace the temporary password, and you will continue to your dashboard.", { confirmLabel: "Change password" })) return;
     const button = form.querySelector("button[type=submit]");
     button.disabled = true;
     try {
@@ -375,6 +436,7 @@ async function initAccountPage() {
       showStep(2);
       return;
     }
+    if (!await confirmAction("Update your email address?", `Your account email will change to ${emailField.value.trim()}.`, { confirmLabel: "Update email" })) return;
     emailSubmit.disabled = true;
     try {
       const { user: updatedUser } = await request("/api/auth/account/email", {
@@ -403,6 +465,7 @@ async function initAccountPage() {
       showAlert($("#account-password-alert"), "The new passwords do not match.");
       return;
     }
+    if (!await confirmAction("Update your password?", "Your new password will replace the current one, and other signed-in sessions will be ended.", { confirmLabel: "Update password" })) return;
     passwordSubmit.disabled = true;
     try {
       await request("/api/auth/password/change", {
@@ -547,11 +610,13 @@ async function initDashboard(role) {
   refreshTimer = window.setInterval(load, 5000);
   countdownTimer = window.setInterval(updateCountdown, 1000);
   $("#logout").addEventListener("click", async () => {
+    if (!await confirmAction("Sign out?", "You will be signed out of this staff account and returned to the login page.", { confirmLabel: "Sign out", danger: true })) return;
     await request("/api/auth/logout", { method: "POST" });
     location.assign("/");
   });
   if (role === "staff") {
     $("#call-next").addEventListener("click", async () => {
+      if (!await confirmAction("Call the next student?", "The next waiting student will be marked as currently being served and their call timer will start.", { confirmLabel: "Call student" })) return;
       try { await request("/api/queue/next", { method: "POST" }); await load(); }
       catch (error) { showAlert($("#page-alert"), error.message); }
     });
@@ -575,6 +640,13 @@ function updateCountdown() {
 }
 
 async function mutateCurrent(action, load) {
+  const completed = action === "complete";
+  if (!await confirmAction(completed ? "Mark this student completed?" : "Mark this student as no-show?", completed
+    ? "This student will be marked as served, and the call will be removed from the active queue."
+    : "This student will be marked as a no-show and removed from the active queue.", {
+      confirmLabel: completed ? "Mark completed" : "Mark no-show",
+      danger: !completed,
+    })) return;
   try {
     const data = await request("/api/queue/current");
     if (data.ticket) await request(`/api/queue/${encodeURIComponent(data.ticket.id)}/${action}`, { method: "POST" });
@@ -599,14 +671,16 @@ async function initStaffPage() {
     $("#staff-list").innerHTML = staff.length ? staff.map((person) => `<tr><td><strong>${escapeHtml(person.name)}</strong></td><td>${escapeHtml(person.email)}</td><td>${escapeHtml(person.username)}</td><td>${person.isActive ? '<span class="admin-status" data-status="completed">Active</span>' : '<span class="admin-status">Inactive</span>'}${person.mustChangePassword ? '<div class="admin-helper">Temporary password pending</div>' : ""}</td><td class="admin-menu-cell"><details class="admin-row-menu"><summary aria-label="Actions for ${escapeHtml(person.name)}">···</summary><div><button class="admin-button" type="button" data-reset-staff-id="${escapeHtml(person.id)}">Set temporary password</button><button class="admin-button ${person.isActive ? "admin-button-danger" : ""}" type="button" data-staff-id="${escapeHtml(person.id)}" data-active="${person.isActive}">${person.isActive ? "Deactivate" : "Activate"}</button></div></details></td></tr>`).join("") : '<tr><td colspan="5" class="admin-empty">No staff accounts have been added.</td></tr>';
   };
   await list();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
+  $("#logout").addEventListener("click", async () => { if (!await confirmAction("Sign out?", "You will be signed out of this administrator account and returned to the login page.", { confirmLabel: "Sign out", danger: true })) return; await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   $("#staff-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
+    const values = Object.fromEntries(new FormData(form));
+    if (!await confirmAction("Create this staff account?", `A staff account for ${values.name} (${values.email}) will be created.`, { confirmLabel: "Create account" })) return;
     const button = form.querySelector("button");
     button.disabled = true;
     try {
-      await request("/api/admin/staff", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+      await request("/api/admin/staff", { method: "POST", body: JSON.stringify(values) });
       form.reset();
       showAlert($("#page-alert"), "Staff account created.", "success");
       await list();
@@ -616,7 +690,7 @@ async function initStaffPage() {
   $("#staff-list").addEventListener("click", async (event) => {
     const resetButton = event.target.closest("[data-reset-staff-id]");
     if (resetButton) {
-      const temporaryPassword = prompt("Enter a temporary password with at least 12 characters. The staff member must change it at next sign-in:");
+      const temporaryPassword = await showActionModal({ title: "Set a temporary password", message: "This replaces the staff member's current password. They will be required to change it at their next sign-in.", confirmLabel: "Set password", inputLabel: "Temporary password (at least 12 characters)", minLength: 12 });
       if (!temporaryPassword) return;
       try {
         await request(`/api/admin/staff/${encodeURIComponent(resetButton.dataset.resetStaffId)}`, {
@@ -630,8 +704,15 @@ async function initStaffPage() {
     }
     const button = event.target.closest("[data-staff-id]");
     if (!button) return;
+    const activate = button.dataset.active === "true";
+    if (!await confirmAction(activate ? "Deactivate this staff account?" : "Activate this staff account?", activate
+      ? "This staff member will no longer be able to sign in until their account is activated again."
+      : "This staff member will be able to sign in and access staff queue tools.", {
+        confirmLabel: activate ? "Deactivate account" : "Activate account",
+        danger: activate,
+      })) return;
     try {
-      await request(`/api/admin/staff/${encodeURIComponent(button.dataset.staffId)}`, { method: "PATCH", body: JSON.stringify({ isActive: button.dataset.active !== "true" }) });
+      await request(`/api/admin/staff/${encodeURIComponent(button.dataset.staffId)}`, { method: "PATCH", body: JSON.stringify({ isActive: !activate }) });
       await list();
     } catch (error) { showAlert($("#page-alert"), error.message); }
   });
@@ -641,7 +722,7 @@ async function initSettingsPage() {
   const user = await requireUser("admin");
   if (!user) return;
   connectAdminStatus();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
+  $("#logout").addEventListener("click", async () => { if (!await confirmAction("Sign out?", "You will be signed out of this administrator account and returned to the login page.", { confirmLabel: "Sign out", danger: true })) return; await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   const { settings } = await request("/api/admin/settings");
   $("#duration").value = settings.noShowDuration;
   $("#queue-status").value = settings.systemStatus;
@@ -649,6 +730,8 @@ async function initSettingsPage() {
   $("#system-status").dataset.status = settings.systemStatus;
   $("#settings-form").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const requestedStatus = $("#queue-status").value === "open" ? "open" : "closed";
+    if (!await confirmAction("Save queue settings?", `The call timeout will be set to ${$("#duration").value} seconds and the queue will be ${requestedStatus}.`, { confirmLabel: "Save settings" })) return;
     try {
       const { settings: saved } = await request("/api/admin/settings", { method: "PUT", body: JSON.stringify({ noShowDuration: Number($("#duration").value), systemStatus: $("#queue-status").value }) });
       $("#duration").value = saved.noShowDuration;
@@ -659,7 +742,7 @@ async function initSettingsPage() {
     } catch (error) { showAlert($("#page-alert"), error.message); }
   });
   $("#reset-queue").addEventListener("click", async () => {
-    if (!confirm("Reset today's queue? Active tickets will be marked No Show.")) return;
+    if (!await confirmAction("Reset today's queue?", "All active tickets will be marked no-show. This cannot be undone.", { confirmLabel: "Reset queue", danger: true })) return;
     try { await request("/api/admin/queue/reset", { method: "POST" }); showAlert($("#page-alert"), "Today's queue has been reset.", "success"); }
     catch (error) { showAlert($("#page-alert"), error.message); }
   });
@@ -670,7 +753,7 @@ async function initHistoryPage() {
   const user = await requireUser(roles);
   if (!user) return;
   connectAdminStatus();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
+  $("#logout").addEventListener("click", async () => { if (!await confirmAction("Sign out?", "You will be signed out of this administrator account and returned to the login page.", { confirmLabel: "Sign out", danger: true })) return; await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   const date = $("#history-date");
   const search = page === "admin-history" ? $("#history-search") : null;
   const tbody = $("#history-table");
@@ -711,7 +794,7 @@ async function initQrPage() {
   const user = await requireUser("admin");
   if (!user) return;
   connectAdminStatus();
-  $("#logout").addEventListener("click", async () => { await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
+  $("#logout").addEventListener("click", async () => { if (!await confirmAction("Sign out?", "You will be signed out of this account and returned to the login page.", { confirmLabel: "Sign out", danger: true })) return; await request("/api/auth/logout", { method: "POST" }); location.assign("/"); });
   $("#print-qr").addEventListener("click", () => window.print());
   try {
     const { url, dataUrl } = await request("/api/qr");
