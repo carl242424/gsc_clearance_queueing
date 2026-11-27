@@ -654,13 +654,16 @@ app.get("/api/queue/:id", asyncRoute(async (req, res) => {
 app.post("/api/queue/:id/leave", asyncRoute(async (req, res) => {
   if (!idSchema.safeParse(req.params.id).success) return fail(res, 404, "Ticket not found.");
   const ticket = await QueueTicket.findOneAndUpdate(
-    { _id: req.params.id, status: "waiting" },
-    { $set: { status: "cancelled", cancelledAt: new Date() } },
+    { _id: req.params.id, status: { $in: ["waiting", "serving"] } },
+    {
+      $set: { status: "cancelled", cancelledAt: new Date() },
+      $unset: { callExpiresAt: 1 },
+    },
     { new: true },
   );
   if (ticket) {
     await record(ticket, "left_queue", "Student");
-    publishQueueUpdate();
+    publishQueueUpdate(ticket);
     return res.json({ ticket: publicTicket(ticket) });
   }
   const existing = await QueueTicket.findById(req.params.id).lean();
@@ -668,7 +671,7 @@ app.post("/api/queue/:id/leave", asyncRoute(async (req, res) => {
   if (["cancelled", "completed", "no-show"].includes(existing.status)) {
     return res.json({ ticket: publicTicket(existing) });
   }
-  return fail(res, 409, "Your ticket is currently being served. Please ask staff for assistance.");
+  return fail(res, 409, "The ticket status changed before it could be canceled. Please refresh and try again.");
 }));
 
 function operationError(message, status) {

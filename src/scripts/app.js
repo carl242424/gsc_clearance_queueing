@@ -235,9 +235,9 @@ async function initStatusPage() {
   $("#ticket-notify")?.addEventListener("click", enableTicketNotifications);
   $("#ticket-quit")?.addEventListener("click", async (event) => {
     event.preventDefault();
-    const leaveConfirmed = await confirmAction("Leave the queue?", "Your waiting ticket will be canceled and your place in line will be lost.", { confirmLabel: "Leave queue", danger: true });
-    if (!leaveConfirmed) return;
     const button = event.currentTarget;
+    const leaveConfirmed = await confirmAction("Leave the queue?", "Your ticket will be canceled and your place in line will be lost.", { confirmLabel: "Leave queue", danger: true });
+    if (!leaveConfirmed) return;
     button.setAttribute("aria-disabled", "true");
     try {
       await request(`/api/queue/${encodeURIComponent(id)}/leave`, { method: "POST" });

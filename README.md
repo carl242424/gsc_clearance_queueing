@@ -62,6 +62,7 @@ Staff/admin sockets join `staff-room` and receive full dashboard queue data. Una
 
 - MongoDB indexes enforce unique daily queue numbers, one active ticket per student per day, and one currently serving ticket. A MongoDB atomic counter assigns each daily sequence; queue numbers restart at `Q001` on the next date in `QUEUE_TIME_ZONE` (default `Asia/Manila`).
 - Completed and No Show tickets remain in the database and history. Students may join again that day after a terminal status.
+- Students can cancel a waiting or currently served ticket from the ticket page; canceling a served ticket clears its call timer and makes the serving slot available.
 - The server persists `callExpiresAt`, processes expired calls in the background, and checks expiry when queue operations/status are requested. A restart does not reset a call timer.
 - Admins can pause new ticket registrations and configure the call timeout from Queue Settings.
 - Students can return to an active ticket using the ticket URL or browser storage. The UUID ticket URL exposes only that ticket's status details; other students are never listed by public endpoints.
