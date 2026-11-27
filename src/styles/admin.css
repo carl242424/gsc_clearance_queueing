@@ -92,6 +92,7 @@ body[data-page^="admin-"], body[data-page^="staff-"] { --ad-bg: #f3f4f6; --ad-su
 .admin-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
 .admin-field label { color: #343c47; font-size: 12px; font-weight: 600; }
 .admin-field .admin-control { width: 100%; }
+.admin-field .password-control .admin-control { padding-right: 66px; }
 .admin-helper { color: var(--ad-muted); font-size: 12px; line-height: 1.45; }
 .admin-form-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 16px; border-top: 1px solid #e9ebef; }
 .admin-settings-status { display: inline-flex; align-items: center; gap: 7px; color: var(--ad-muted); font-size: 13px; }

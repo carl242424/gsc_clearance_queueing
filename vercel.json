@@ -16,6 +16,10 @@
     {
       "source": "/socket.io/:path*",
       "destination": "https://gsc-clearance-queueing.onrender.com/socket.io/:path*"
+    },
+    {
+      "source": "/status/:id",
+      "destination": "/status/"
     }
   ],
   "headers": [

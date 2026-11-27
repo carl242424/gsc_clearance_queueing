@@ -566,6 +566,14 @@ async function mutateCurrent(action, load) {
 async function initStaffPage() {
   const user = await requireUser("admin");
   if (!user) return;
+  const staffPassword = $("#staff-password");
+  const staffPasswordToggle = $("#staff-password-toggle");
+  staffPasswordToggle.addEventListener("click", () => {
+    const showing = staffPassword.type === "password";
+    staffPassword.type = showing ? "text" : "password";
+    staffPasswordToggle.textContent = showing ? "Hide" : "Show";
+    staffPasswordToggle.setAttribute("aria-pressed", String(showing));
+  });
   connectAdminStatus();
   const list = async () => {
     const { staff } = await request("/api/admin/staff");

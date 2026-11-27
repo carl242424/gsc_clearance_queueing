@@ -11,7 +11,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <div class="admin-field"><label for="staff-name">Full name</label><input id="staff-name" class="admin-control" name="name" autocomplete="name" required /></div>
         <div class="admin-field"><label for="staff-email">Email</label><input id="staff-email" class="admin-control" name="email" type="email" autocomplete="email" required /></div>
         <div class="admin-field"><label for="staff-username">Username</label><input id="staff-username" class="admin-control" name="username" minlength="3" autocomplete="username" required /></div>
-        <div class="admin-field"><label for="staff-password">Temporary password</label><input id="staff-password" class="admin-control" name="password" type="password" minlength="12" autocomplete="new-password" required /><span class="admin-helper">Use at least 12 characters. Staff must replace it after signing in.</span></div>
+        <div class="admin-field"><label for="staff-password">Temporary password</label><div class="password-control"><input id="staff-password" class="admin-control" name="password" type="password" minlength="12" autocomplete="new-password" required /><button class="password-toggle" id="staff-password-toggle" type="button" aria-controls="staff-password" aria-pressed="false">Show</button></div><span class="admin-helper">Use at least 12 characters. Staff must replace it after signing in.</span></div>
         <div class="admin-form-actions"><button class="admin-button admin-button-primary" type="submit">Create account</button></div>
       </form>
     </div>
