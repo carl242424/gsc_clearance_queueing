@@ -1,6 +1,11 @@
 import { io } from "socket.io-client";
 
-const API = import.meta.env.PUBLIC_API_URL || (location.port === "4321" ? "http://localhost:3001" : location.origin);
+const configuredApi = import.meta.env.PUBLIC_API_URL?.replace(/\/+$/, "");
+const isLocalPage = location.port === "4321" || ["localhost", "127.0.0.1"].includes(location.hostname);
+const pointsToLocalApi = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredApi || "");
+const API = configuredApi && !(pointsToLocalApi && !isLocalPage)
+  ? configuredApi
+  : isLocalPage ? "http://localhost:3001" : "https://gsc-clearance-queueing.onrender.com";
 const page = document.body.dataset.page;
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
